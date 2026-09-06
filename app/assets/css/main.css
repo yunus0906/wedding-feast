@@ -323,6 +323,42 @@ a {
   color: #fff;
 }
 
+.seat-dot.host {
+  background: var(--accent);
+  color: #fff;
+}
+
+.seat-dot.host::after {
+  content: "主";
+  position: absolute;
+  top: -18px;
+  right: -12px;
+  border: 2px solid var(--line);
+  background: var(--accent-3);
+  color: var(--ink);
+  font-size: 10px;
+  font-weight: 900;
+  padding: 1px 4px;
+}
+
+.seat-dot.cohost {
+  background: var(--accent-3);
+  color: var(--ink);
+}
+
+.seat-dot.cohost::after {
+  content: "副";
+  position: absolute;
+  top: -18px;
+  right: -12px;
+  border: 2px solid var(--line);
+  background: #fff;
+  color: var(--ink);
+  font-size: 10px;
+  font-weight: 900;
+  padding: 1px 4px;
+}
+
 .guest-chip {
   border: 3px solid var(--line);
   padding: 10px 12px;

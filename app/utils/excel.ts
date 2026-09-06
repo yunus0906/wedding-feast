@@ -1,6 +1,7 @@
-import type { GuestImportRow } from '~/types/guest'
+import type { GuestCategory, GuestImportRow } from '~/types/guest'
 
-const headers = ['姓名', '分类', '所属', '联系电话', '同行人数', '儿童人数', '备注']
+const headers = ['姓名', '分类', '所属', '联系电话', '同行人', '儿童人数', '关系标签', '备注']
+const categories: GuestCategory[] = ['亲戚', '好友', '同学']
 
 export function parseGuestCsv(text: string): GuestImportRow[] {
   const lines = text
@@ -19,13 +20,14 @@ export function parseGuestCsv(text: string): GuestImportRow[] {
   const dataRows = hasHeader ? rows.slice(1) : rows
 
   return dataRows
-    .map(([name, category, side, phone, companionCount, childrenCount, note]) => ({
+    .map(([name, category, side, phone, companions, childrenCount, relationTag, note]) => ({
       name: name || '',
-      category: category || '其他',
+      category: categories.includes(category as GuestCategory) ? category as GuestCategory : '亲戚',
       side: side === '女方' || side === 'bride' ? 'bride' : 'groom',
       phone: phone || '',
-      companionCount: Number(companionCount || 0),
+      companions: companions || '',
       childrenCount: Number(childrenCount || 0),
+      relationTag: relationTag || '',
       note: note || ''
     }))
     .filter(row => row.name)
@@ -40,8 +42,9 @@ export function exportGuestCsv(rows: Array<Record<string, string | number>>): st
         row.category ?? '',
         row.side ?? '',
         row.phone ?? '',
-        row.companionCount ?? 0,
+        row.companions ?? '',
         row.childrenCount ?? 0,
+        row.relationTag ?? '',
         row.note ?? ''
       ]
         .map(value => String(value).replaceAll('"', '""'))

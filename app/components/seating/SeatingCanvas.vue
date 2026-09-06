@@ -15,11 +15,11 @@
         v-for="seat in getSeatPositions(table.capacity)"
         :key="seat.index"
         class="seat-dot"
-        :class="{ filled: !!seatGuest(table.id, seat.index) }"
+        :class="[seatRole(table.id, seat.index), { filled: !!seatGuest(table.id, seat.index) }]"
         :style="{ left: `${seat.left}px`, top: `${seat.top}px` }"
         @click.stop="$emit('seat-click', { tableId: table.id, seatIndex: seat.index })"
       >
-        {{ seatGuest(table.id, seat.index)?.name?.slice(0, 1) || seat.index + 1 }}
+        {{ guestSeatLabel(table.id, seat.index) || seat.index + 1 }}
       </div>
     </div>
 
@@ -72,6 +72,15 @@ const canvasRef = ref<HTMLElement | null>(null)
 function seatGuest(tableId: string, seatIndex: number) {
   const seat = props.seats.find(item => item.tableId === tableId && item.seatIndex === seatIndex)
   return seat ? props.guestMap.get(seat.guestId) ?? null : null
+}
+
+function seatRole(tableId: string, seatIndex: number) {
+  return props.seats.find(item => item.tableId === tableId && item.seatIndex === seatIndex)?.role ?? 'regular'
+}
+
+function guestSeatLabel(tableId: string, seatIndex: number) {
+  const name = seatGuest(tableId, seatIndex)?.name ?? ''
+  return name ? name.slice(-1) : ''
 }
 
 function dragHandler(kind: 'table' | 'layout', id: string) {

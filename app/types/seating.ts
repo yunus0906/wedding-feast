@@ -1,4 +1,5 @@
 export type LayoutItemType = 'stage' | 't_stage'
+export type SeatRole = 'regular' | 'host' | 'cohost'
 
 export interface WeddingTable {
   id: string
@@ -15,6 +16,7 @@ export interface Seat {
   guestId: string
   tableId: string
   seatIndex: number
+  role: SeatRole
   createdAt: string
 }
 

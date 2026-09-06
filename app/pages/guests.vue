@@ -48,8 +48,9 @@
               <th>分类</th>
               <th>所属</th>
               <th>电话</th>
-              <th>同行</th>
+              <th>同行人</th>
               <th>儿童</th>
+              <th>关系标签</th>
               <th>桌次</th>
               <th>操作</th>
             </tr>
@@ -60,8 +61,12 @@
               <td><span class="tag">{{ guest.category }}</span></td>
               <td><span class="tag" :class="guest.side">{{ sideLabel(guest.side) }}</span></td>
               <td>{{ guest.phone || '-' }}</td>
-              <td>{{ guest.companionCount }}</td>
+              <td>{{ guest.companions || '-' }}</td>
               <td>{{ guest.childrenCount }}</td>
+              <td>
+                <span v-for="tag in splitTags(guest.relationTag)" :key="tag" class="tag">{{ tag }}</span>
+                <span v-if="!splitTags(guest.relationTag).length">-</span>
+              </td>
               <td>{{ tableNameByGuest(guest.id) }}</td>
               <td>
                 <button class="btn soft" @click="openEdit(guest.id)">编辑</button>
@@ -69,7 +74,7 @@
               </td>
             </tr>
             <tr v-if="!filteredGuests.length">
-              <td colspan="8" class="muted">暂无匹配宾客。</td>
+              <td colspan="9" class="muted">暂无匹配宾客。</td>
             </tr>
           </tbody>
         </table>
@@ -87,7 +92,7 @@
 </template>
 
 <script setup lang="ts">
-import type { GuestSide } from '~/types/guest'
+import type { GuestCategory, GuestSide } from '~/types/guest'
 import { exportGuestCsv, parseGuestCsv } from '~/utils/excel'
 
 const store = useGuestStore()
@@ -98,11 +103,12 @@ const editingId = ref<string | null>(null)
 
 const emptyForm = {
   name: '',
-  category: '亲戚',
+  category: '亲戚' as GuestCategory,
   side: 'groom' as GuestSide,
   phone: '',
-  companionCount: 0,
+  companions: '',
   childrenCount: 0,
+  relationTag: '',
   note: ''
 }
 
@@ -113,8 +119,16 @@ const filteredGuests = computed(() => {
   return value ? store.guests.filter(guest => guest.name.includes(value)) : store.guests
 })
 
+onMounted(() => {
+  store.normalizePersistedGuests()
+})
+
 function sideLabel(side: GuestSide) {
   return side === 'groom' ? '男方' : '女方'
+}
+
+function splitTags(value: string) {
+  return value.split(',').map(tag => tag.trim()).filter(Boolean)
 }
 
 function tableNameByGuest(guestId: string) {
@@ -138,8 +152,9 @@ function openEdit(id: string) {
     category: guest.category,
     side: guest.side,
     phone: guest.phone,
-    companionCount: guest.companionCount,
     childrenCount: guest.childrenCount,
+    companions: guest.companions ?? '',
+    relationTag: guest.relationTag ?? '',
     note: guest.note
   })
   formVisible.value = true

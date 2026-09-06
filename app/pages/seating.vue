@@ -42,7 +42,13 @@
     </div>
 
     <div class="panel">
-      <h3 style="margin-top:0">已入座宾客</h3>
+      <div class="toolbar" style="justify-content:space-between;margin-bottom:12px">
+        <h3 style="margin:0">已入座宾客</h3>
+        <select v-model="seatTableFilter" class="select" style="max-width:220px">
+          <option value="">全部桌次</option>
+          <option v-for="table in store.tables" :key="table.id" :value="table.id">{{ table.name }}</option>
+        </select>
+      </div>
       <div class="table-wrap">
         <table class="table">
           <thead>
@@ -50,18 +56,36 @@
               <th>宾客</th>
               <th>桌次</th>
               <th>座位</th>
+              <th>身份</th>
               <th>操作</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="seat in store.seats" :key="seat.id">
+            <tr v-for="seat in filteredSeats" :key="seat.id">
               <td>{{ guestMap.get(seat.guestId)?.name || '-' }}</td>
-              <td>{{ tableMap.get(seat.tableId)?.name || '-' }}</td>
-              <td>{{ seat.seatIndex + 1 }}</td>
+              <td>
+                <select class="select" :value="seat.tableId" @change="changeSeatTable(seat.guestId, ($event.target as HTMLSelectElement).value)">
+                  <option v-for="table in store.tables" :key="table.id" :value="table.id">{{ table.name }}</option>
+                </select>
+              </td>
+              <td>
+                <select class="select" :value="seat.seatIndex" @change="changeSeatIndex(seat.guestId, Number(($event.target as HTMLSelectElement).value))">
+                  <option v-for="option in seatOptionsFor(seat.tableId)" :key="option.index" :value="option.index">
+                    {{ option.index + 1 }}号位
+                  </option>
+                </select>
+              </td>
+              <td>
+                <select class="select" :value="seat.role" @change="store.updateSeatRole(seat.guestId, ($event.target as HTMLSelectElement).value as SeatRole)">
+                  <option value="regular">普通</option>
+                  <option value="host">主陪</option>
+                  <option value="cohost">副陪</option>
+                </select>
+              </td>
               <td><button class="btn warning" @click="store.unseatGuest(seat.guestId)">移除座位</button></td>
             </tr>
-            <tr v-if="!store.seats.length">
-              <td colspan="4" class="muted">暂无已入座宾客。</td>
+            <tr v-if="!filteredSeats.length">
+              <td colspan="5" class="muted">暂无已入座宾客。</td>
             </tr>
           </tbody>
         </table>
@@ -90,6 +114,9 @@
 </template>
 
 <script setup lang="ts">
+import type { SeatRole } from '~/types/seating'
+import { getSeatPositions } from '~/utils/seating'
+
 const guestStore = useGuestStore()
 const store = useSeatingStore()
 
@@ -101,14 +128,21 @@ const seatDialogVisible = ref(false)
 const selectedGuestId = ref<string | null>(null)
 const pendingSeat = ref<{ tableId: string; seatIndex: number } | null>(null)
 const draggingGuestId = ref<string | null>(null)
+const seatTableFilter = ref('')
 
 const guestMap = computed(() => new Map(guestStore.guests.map(guest => [guest.id, guest])))
 const tableMap = computed(() => new Map(store.tables.map(table => [table.id, table])))
 const assignedGuestIds = computed(() => new Set(store.seats.map(seat => seat.guestId)))
 const unassignedGuests = computed(() => guestStore.guests.filter(guest => !assignedGuestIds.value.has(guest.id)))
 const selectedGuest = computed(() => selectedGuestId.value ? guestMap.value.get(selectedGuestId.value) ?? null : null)
+const filteredSeats = computed(() => seatTableFilter.value
+  ? store.seats.filter(seat => seat.tableId === seatTableFilter.value)
+  : store.seats
+)
 
 onMounted(() => {
+  guestStore.normalizePersistedGuests()
+  store.normalizePersistedSeats()
   if (!store.tables.length) {
     store.addTable({ name: '1号桌', capacity: 10, x: 220, y: 220 })
     store.addTable({ name: '2号桌', capacity: 10, x: 460, y: 300 })
@@ -185,16 +219,37 @@ function handleGuestDrop(tableId: string) {
   draggingGuestId.value = null
 }
 
-function assignSelectedGuest(payload: { tableId: string; seatIndex?: number }) {
+function assignSelectedGuest(payload: { tableId: string; seatIndex?: number; role: SeatRole }) {
   if (!selectedGuestId.value) return
   const tableId = pendingSeat.value?.tableId ?? payload.tableId
   const seatIndex = pendingSeat.value?.seatIndex ?? payload.seatIndex
-  const ok = store.assignGuest(selectedGuestId.value, tableId, seatIndex)
+  const ok = store.assignGuest(selectedGuestId.value, tableId, seatIndex, payload.role)
   if (!ok) {
     alert('该桌已满或座位已被占用')
     return
   }
   seatDialogVisible.value = false
+}
+
+function seatOptionsFor(tableId: string) {
+  const table = tableMap.value.get(tableId)
+  return table ? getSeatPositions(table.capacity) : []
+}
+
+function changeSeatTable(guestId: string, tableId: string) {
+  const ok = store.moveSeat(guestId, tableId)
+  if (!ok) {
+    alert('目标桌已满')
+  }
+}
+
+function changeSeatIndex(guestId: string, seatIndex: number) {
+  const seat = store.seats.find(item => item.guestId === guestId)
+  if (!seat) return
+  const ok = store.moveSeat(guestId, seat.tableId, seatIndex)
+  if (!ok) {
+    alert('该座位已被占用')
+  }
 }
 
 function save() {

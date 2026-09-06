@@ -8,14 +8,19 @@
 
       <div class="field-grid">
         <input v-model="form.name" class="input full" placeholder="姓名" />
-        <input v-model="form.category" class="input" placeholder="分类" />
+        <select v-model="form.category" class="select">
+          <option value="亲戚">亲戚</option>
+          <option value="好友">好友</option>
+          <option value="同学">同学</option>
+        </select>
         <select v-model="form.side" class="select">
           <option value="groom">男方</option>
           <option value="bride">女方</option>
         </select>
         <input v-model="form.phone" class="input full" placeholder="联系电话" />
-        <input v-model.number="form.companionCount" class="input" type="number" min="0" placeholder="同行人数" />
+        <input v-model="form.companions" class="input full" placeholder="同行人，英文逗号分隔" />
         <input v-model.number="form.childrenCount" class="input" type="number" min="0" placeholder="儿童人数" />
+        <input v-model="form.relationTag" class="input" placeholder="关系标签，英文逗号分隔" />
         <textarea v-model="form.note" class="textarea full" rows="4" placeholder="备注" />
       </div>
 
@@ -28,17 +33,18 @@
 </template>
 
 <script setup lang="ts">
-import type { GuestSide } from '~/types/guest'
+import type { GuestCategory, GuestSide } from '~/types/guest'
 
 const props = defineProps<{
   mode: 'create' | 'edit'
   modelValue: {
     name: string
-    category: string
+    category: GuestCategory
     side: GuestSide
     phone: string
-    companionCount: number
+    companions: string
     childrenCount: number
+    relationTag: string
     note: string
   }
 }>()

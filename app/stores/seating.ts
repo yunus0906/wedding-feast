@@ -1,4 +1,4 @@
-import type { LayoutItem, LayoutItemType, Seat, WeddingTable } from '~/types/seating'
+import type { LayoutItem, LayoutItemType, Seat, SeatRole, WeddingTable } from '~/types/seating'
 import { createId } from '~/utils/id'
 import { findNextSeatIndex } from '~/utils/seating'
 
@@ -20,6 +20,12 @@ export const useSeatingStore = defineStore('seating-store', {
     }
   },
   actions: {
+    normalizePersistedSeats() {
+      this.seats = this.seats.map(seat => ({
+        ...seat,
+        role: seat.role ?? 'regular'
+      }))
+    },
     markDirty() {
       this.dirty = true
     },
@@ -74,7 +80,7 @@ export const useSeatingStore = defineStore('seating-store', {
       this.layoutItems = this.layoutItems.filter(item => item.id !== id)
       this.markDirty()
     },
-    assignGuest(guestId: string, tableId: string, seatIndex?: number) {
+    assignGuest(guestId: string, tableId: string, seatIndex?: number, role: SeatRole = 'regular') {
       const table = this.tables.find(item => item.id === tableId)
       if (!table) return false
 
@@ -86,16 +92,38 @@ export const useSeatingStore = defineStore('seating-store', {
       this.seats = this.seats.filter(seat => seat.guestId !== guestId)
       const exists = this.seats.some(seat => seat.tableId === tableId && seat.seatIndex === nextSeatIndex)
       if (exists) return false
+      if (role === 'host' || role === 'cohost') {
+        const duplicateRoleSeat = this.seats.find(seat => seat.tableId === tableId && seat.role === role)
+        if (duplicateRoleSeat) {
+          duplicateRoleSeat.role = 'regular'
+        }
+      }
 
       this.seats.push({
         id: createId(),
         guestId,
         tableId,
         seatIndex: nextSeatIndex,
+        role,
         createdAt: now()
       })
       this.markDirty()
       return true
+    },
+    moveSeat(guestId: string, tableId: string, seatIndex?: number) {
+      return this.assignGuest(guestId, tableId, seatIndex, this.seats.find(seat => seat.guestId === guestId)?.role ?? 'regular')
+    },
+    updateSeatRole(guestId: string, role: SeatRole) {
+      const seat = this.seats.find(item => item.guestId === guestId)
+      if (!seat) return
+      if (role === 'host' || role === 'cohost') {
+        const duplicate = this.seats.find(item => item.tableId === seat.tableId && item.role === role && item.guestId !== guestId)
+        if (duplicate) {
+          duplicate.role = 'regular'
+        }
+      }
+      seat.role = role
+      this.markDirty()
     },
     unseatGuest(guestId: string) {
       this.seats = this.seats.filter(seat => seat.guestId !== guestId)

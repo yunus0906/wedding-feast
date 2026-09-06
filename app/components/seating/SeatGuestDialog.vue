@@ -21,6 +21,11 @@
             座位 {{ seat.index + 1 }}
           </option>
         </select>
+        <select v-model="selectedRole" class="select full">
+          <option value="regular">普通宾客</option>
+          <option value="host">主陪</option>
+          <option value="cohost">副陪</option>
+        </select>
       </div>
 
       <div class="toolbar" style="justify-content:flex-end;margin-top:14px">
@@ -33,7 +38,7 @@
 
 <script setup lang="ts">
 import type { Guest } from '~/types/guest'
-import type { Seat, WeddingTable } from '~/types/seating'
+import type { Seat, SeatRole, WeddingTable } from '~/types/seating'
 import { getSeatPositions } from '~/utils/seating'
 
 const props = defineProps<{
@@ -44,11 +49,12 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   close: []
-  assign: [payload: { tableId: string; seatIndex?: number }]
+  assign: [payload: { tableId: string; seatIndex?: number; role: SeatRole }]
 }>()
 
 const selectedTableId = ref('')
 const selectedSeatIndex = ref(-1)
+const selectedRole = ref<SeatRole>('regular')
 
 const selectedTable = computed(() => props.tables.find(table => table.id === selectedTableId.value) ?? null)
 const seatOptions = computed(() => selectedTable.value ? getSeatPositions(selectedTable.value.capacity) : [])
@@ -67,7 +73,8 @@ function submit() {
   if (!selectedTableId.value) return
   emit('assign', {
     tableId: selectedTableId.value,
-    seatIndex: selectedSeatIndex.value >= 0 ? selectedSeatIndex.value : undefined
+    seatIndex: selectedSeatIndex.value >= 0 ? selectedSeatIndex.value : undefined,
+    role: selectedRole.value
   })
 }
 </script>
