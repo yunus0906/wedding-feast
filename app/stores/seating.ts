@@ -26,6 +26,15 @@ export const useSeatingStore = defineStore('seating-store', {
         role: seat.role ?? 'regular'
       }))
     },
+    replaceState(payload: { tables: WeddingTable[]; seats: Seat[]; layoutItems: LayoutItem[] }) {
+      this.tables = payload.tables
+      this.seats = payload.seats.map(seat => ({
+        ...seat,
+        role: seat.role ?? 'regular'
+      }))
+      this.layoutItems = payload.layoutItems
+      this.markSaved()
+    },
     markDirty() {
       this.dirty = true
     },

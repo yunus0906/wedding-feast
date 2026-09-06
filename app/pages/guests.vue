@@ -36,7 +36,11 @@
           <input type="file" accept=".csv,.txt" style="display:none" @change="handleImport" />
         </label>
         <button class="btn soft" @click="downloadCsv">导出 CSV</button>
+        <button class="btn soft" :disabled="cloudSync.loading.value" @click="loadCloudData">从云端加载</button>
+        <button class="btn primary" :disabled="cloudSync.loading.value" @click="saveCloudData">保存到云端</button>
+        <span v-if="cloudSync.lastSyncedAt.value" class="tag">同步 {{ cloudSync.lastSyncedAt.value }}</span>
       </div>
+      <p v-if="cloudSync.error.value" class="muted" style="margin-bottom:0">{{ cloudSync.error.value }}</p>
     </div>
 
     <div class="table-card">
@@ -97,6 +101,7 @@ import { exportGuestCsv, parseGuestCsv } from '~/utils/excel'
 
 const store = useGuestStore()
 const seatingStore = useSeatingStore()
+const cloudSync = useWeddingCloudSync()
 const keyword = ref('')
 const formVisible = ref(false)
 const editingId = ref<string | null>(null)
@@ -206,5 +211,23 @@ function downloadCsv() {
   link.download = 'guests.csv'
   link.click()
   URL.revokeObjectURL(url)
+}
+
+async function loadCloudData() {
+  try {
+    await cloudSync.loadFromCloud()
+    alert('云端数据已加载')
+  } catch {
+    alert('云端加载失败，请检查 Supabase 环境变量和数据表')
+  }
+}
+
+async function saveCloudData() {
+  try {
+    await cloudSync.saveToCloud()
+    alert('已保存到云端')
+  } catch {
+    alert('云端保存失败，请检查 Supabase 环境变量和数据表')
+  }
 }
 </script>

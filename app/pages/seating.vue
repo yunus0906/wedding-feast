@@ -8,6 +8,8 @@
       </div>
       <div class="toolbar">
         <span v-if="store.dirty" class="tag">有未保存修改</span>
+        <button class="btn soft" :disabled="cloudSync.loading.value" @click="loadCloudData">从云端加载</button>
+        <button class="btn soft" :disabled="cloudSync.loading.value" @click="saveCloudData">保存到云端</button>
         <button class="btn primary" @click="save">保存</button>
       </div>
     </div>
@@ -119,6 +121,7 @@ import { getSeatPositions } from '~/utils/seating'
 
 const guestStore = useGuestStore()
 const store = useSeatingStore()
+const cloudSync = useWeddingCloudSync()
 
 const tableDialogVisible = ref(false)
 const editingTableId = ref<string | null>(null)
@@ -255,5 +258,23 @@ function changeSeatIndex(guestId: string, seatIndex: number) {
 function save() {
   store.save()
   alert('已保存')
+}
+
+async function loadCloudData() {
+  try {
+    await cloudSync.loadFromCloud()
+    alert('云端数据已加载')
+  } catch {
+    alert('云端加载失败，请检查 Supabase 环境变量和数据表')
+  }
+}
+
+async function saveCloudData() {
+  try {
+    await cloudSync.saveToCloud()
+    alert('已保存到云端')
+  } catch {
+    alert('云端保存失败，请检查 Supabase 环境变量和数据表')
+  }
 }
 </script>

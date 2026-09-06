@@ -88,6 +88,9 @@ export const useGuestStore = defineStore('guest-store', {
     normalizePersistedGuests() {
       this.guests = normalizeGuests(this.guests)
     },
+    replaceGuests(guests: Guest[]) {
+      this.guests = normalizeGuests(guests)
+    },
     addGuest(payload: Omit<Guest, 'id' | 'createdAt' | 'updatedAt'>) {
       const now = new Date().toISOString()
       this.guests.unshift({
