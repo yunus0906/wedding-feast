@@ -163,6 +163,11 @@ a {
   cursor: pointer;
 }
 
+.btn:disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
+}
+
 .btn.primary {
   background: var(--accent-2);
   color: #fff;
@@ -269,6 +274,26 @@ a {
   background-position: center center;
 }
 
+.guide-line {
+  position: absolute;
+  z-index: 5;
+  pointer-events: none;
+  background: var(--accent);
+  box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.5);
+}
+
+.guide-line.vertical {
+  top: 0;
+  bottom: 0;
+  width: 3px;
+}
+
+.guide-line.horizontal {
+  left: 0;
+  right: 0;
+  height: 3px;
+}
+
 .canvas-toolbar {
   display: flex;
   justify-content: space-between;
@@ -283,6 +308,13 @@ a {
   background: #fff;
   box-shadow: var(--shadow);
   user-select: none;
+  touch-action: none;
+}
+
+.table-node.dragging,
+.layout-node.dragging {
+  z-index: 10;
+  outline: 4px dashed var(--accent);
 }
 
 .table-node {

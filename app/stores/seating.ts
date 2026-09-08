@@ -2,8 +2,22 @@ import type { LayoutItem, LayoutItemType, Seat, SeatRole, WeddingTable } from '~
 import { createId } from '~/utils/id'
 import { findNextSeatIndex } from '~/utils/seating'
 
+interface SeatingSnapshot {
+  tables: WeddingTable[]
+  seats: Seat[]
+  layoutItems: LayoutItem[]
+}
+
 function now() {
   return new Date().toISOString()
+}
+
+function cloneSnapshot(payload: SeatingSnapshot): SeatingSnapshot {
+  return {
+    tables: payload.tables.map(table => ({ ...table })),
+    seats: payload.seats.map(seat => ({ ...seat })),
+    layoutItems: payload.layoutItems.map(item => ({ ...item }))
+  }
 }
 
 export const useSeatingStore = defineStore('seating-store', {
@@ -11,15 +25,49 @@ export const useSeatingStore = defineStore('seating-store', {
     tables: [] as WeddingTable[],
     seats: [] as Seat[],
     layoutItems: [] as LayoutItem[],
+    undoStack: [] as SeatingSnapshot[],
+    redoStack: [] as SeatingSnapshot[],
     dirty: false
   }),
   getters: {
-    unassignedGuestIds: state => {
-      const assigned = new Set(state.seats.map(seat => seat.guestId))
-      return assigned
-    }
+    unassignedGuestIds: state => new Set(state.seats.map(seat => seat.guestId)),
+    canUndo: state => state.undoStack.length > 0,
+    canRedo: state => state.redoStack.length > 0
   },
   actions: {
+    currentSnapshot(): SeatingSnapshot {
+      return cloneSnapshot({
+        tables: this.tables,
+        seats: this.seats,
+        layoutItems: this.layoutItems
+      })
+    },
+    restoreSnapshot(snapshot: SeatingSnapshot) {
+      const cloned = cloneSnapshot(snapshot)
+      this.tables = cloned.tables
+      this.seats = cloned.seats
+      this.layoutItems = cloned.layoutItems
+      this.dirty = true
+    },
+    pushHistory() {
+      this.undoStack.push(this.currentSnapshot())
+      if (this.undoStack.length > 80) {
+        this.undoStack.shift()
+      }
+      this.redoStack = []
+    },
+    undo() {
+      const snapshot = this.undoStack.pop()
+      if (!snapshot) return
+      this.redoStack.push(this.currentSnapshot())
+      this.restoreSnapshot(snapshot)
+    },
+    redo() {
+      const snapshot = this.redoStack.pop()
+      if (!snapshot) return
+      this.undoStack.push(this.currentSnapshot())
+      this.restoreSnapshot(snapshot)
+    },
     normalizePersistedSeats() {
       this.seats = this.seats.map(seat => ({
         ...seat,
@@ -33,6 +81,8 @@ export const useSeatingStore = defineStore('seating-store', {
         role: seat.role ?? 'regular'
       }))
       this.layoutItems = payload.layoutItems
+      this.undoStack = []
+      this.redoStack = []
       this.markSaved()
     },
     markDirty() {
@@ -42,6 +92,7 @@ export const useSeatingStore = defineStore('seating-store', {
       this.dirty = false
     },
     addTable(payload: { name: string; capacity: number; x?: number; y?: number }) {
+      this.pushHistory()
       this.tables.push({
         id: createId(),
         name: payload.name,
@@ -56,10 +107,12 @@ export const useSeatingStore = defineStore('seating-store', {
     updateTable(id: string, payload: Partial<Pick<WeddingTable, 'name' | 'capacity' | 'x' | 'y'>>) {
       const table = this.tables.find(item => item.id === id)
       if (!table) return
+      this.pushHistory()
       Object.assign(table, payload, { updatedAt: now() })
       this.markDirty()
     },
     removeTable(id: string) {
+      this.pushHistory()
       this.tables = this.tables.filter(table => table.id !== id)
       this.seats = this.seats.filter(seat => seat.tableId !== id)
       this.markDirty()
@@ -67,7 +120,14 @@ export const useSeatingStore = defineStore('seating-store', {
     moveTable(id: string, x: number, y: number) {
       this.updateTable(id, { x, y })
     },
+    moveTablePreview(id: string, x: number, y: number) {
+      const table = this.tables.find(item => item.id === id)
+      if (!table) return
+      Object.assign(table, { x, y, updatedAt: now() })
+      this.markDirty()
+    },
     addLayoutItem(type: LayoutItemType, payload?: Partial<LayoutItem>) {
+      this.pushHistory()
       this.layoutItems.push({
         id: createId(),
         type,
@@ -82,10 +142,18 @@ export const useSeatingStore = defineStore('seating-store', {
     updateLayoutItem(id: string, payload: Partial<Omit<LayoutItem, 'id' | 'type'>>) {
       const item = this.layoutItems.find(node => node.id === id)
       if (!item) return
+      this.pushHistory()
+      Object.assign(item, payload)
+      this.markDirty()
+    },
+    updateLayoutItemPreview(id: string, payload: Partial<Omit<LayoutItem, 'id' | 'type'>>) {
+      const item = this.layoutItems.find(node => node.id === id)
+      if (!item) return
       Object.assign(item, payload)
       this.markDirty()
     },
     removeLayoutItem(id: string) {
+      this.pushHistory()
       this.layoutItems = this.layoutItems.filter(item => item.id !== id)
       this.markDirty()
     },
@@ -94,18 +162,18 @@ export const useSeatingStore = defineStore('seating-store', {
       if (!table) return false
 
       const nextSeatIndex = seatIndex ?? findNextSeatIndex(table, this.seats)
-      if (nextSeatIndex < 0 || nextSeatIndex >= table.capacity) {
-        return false
-      }
+      if (nextSeatIndex < 0 || nextSeatIndex >= table.capacity) return false
 
-      this.seats = this.seats.filter(seat => seat.guestId !== guestId)
-      const exists = this.seats.some(seat => seat.tableId === tableId && seat.seatIndex === nextSeatIndex)
+      const seatsWithoutGuest = this.seats.filter(seat => seat.guestId !== guestId)
+      const exists = seatsWithoutGuest.some(seat => seat.tableId === tableId && seat.seatIndex === nextSeatIndex)
       if (exists) return false
+
+      this.pushHistory()
+      this.seats = seatsWithoutGuest
+
       if (role === 'host' || role === 'cohost') {
         const duplicateRoleSeat = this.seats.find(seat => seat.tableId === tableId && seat.role === role)
-        if (duplicateRoleSeat) {
-          duplicateRoleSeat.role = 'regular'
-        }
+        if (duplicateRoleSeat) duplicateRoleSeat.role = 'regular'
       }
 
       this.seats.push({
@@ -120,21 +188,22 @@ export const useSeatingStore = defineStore('seating-store', {
       return true
     },
     moveSeat(guestId: string, tableId: string, seatIndex?: number) {
-      return this.assignGuest(guestId, tableId, seatIndex, this.seats.find(seat => seat.guestId === guestId)?.role ?? 'regular')
+      const role = this.seats.find(seat => seat.guestId === guestId)?.role ?? 'regular'
+      return this.assignGuest(guestId, tableId, seatIndex, role)
     },
     updateSeatRole(guestId: string, role: SeatRole) {
       const seat = this.seats.find(item => item.guestId === guestId)
       if (!seat) return
+      this.pushHistory()
       if (role === 'host' || role === 'cohost') {
         const duplicate = this.seats.find(item => item.tableId === seat.tableId && item.role === role && item.guestId !== guestId)
-        if (duplicate) {
-          duplicate.role = 'regular'
-        }
+        if (duplicate) duplicate.role = 'regular'
       }
       seat.role = role
       this.markDirty()
     },
     unseatGuest(guestId: string) {
+      this.pushHistory()
       this.seats = this.seats.filter(seat => seat.guestId !== guestId)
       this.markDirty()
     },

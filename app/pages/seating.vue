@@ -8,6 +8,8 @@
       </div>
       <div class="toolbar">
         <span v-if="store.dirty" class="tag">有未保存修改</span>
+        <button class="btn soft" :disabled="!store.canUndo" @click="store.undo()">撤销</button>
+        <button class="btn soft" :disabled="!store.canRedo" @click="store.redo()">重做</button>
         <button class="btn soft" :disabled="cloudSync.loading.value" @click="loadCloudData">从云端加载</button>
         <button class="btn soft" :disabled="cloudSync.loading.value" @click="saveCloudData">保存到云端</button>
         <button class="btn primary" @click="save">保存</button>
@@ -29,8 +31,10 @@
         :seats="store.seats"
         :layout-items="store.layoutItems"
         :guest-map="guestMap"
-        @move-table="payload => store.moveTable(payload.id, payload.x, payload.y)"
-        @move-layout="payload => store.updateLayoutItem(payload.id, { x: payload.x, y: payload.y })"
+        @drag-history-start="store.pushHistory()"
+        @move-table="payload => store.moveTablePreview(payload.id, payload.x, payload.y)"
+        @move-layout="payload => store.updateLayoutItemPreview(payload.id, { x: payload.x, y: payload.y })"
+        @end-move="store.markDirty()"
         @edit-table="openEditTable"
         @seat-click="handleSeatClick"
         @drop-guest="handleGuestDrop"
@@ -151,6 +155,11 @@ onMounted(() => {
     store.addTable({ name: '2号桌', capacity: 10, x: 460, y: 300 })
     store.markSaved()
   }
+  window.addEventListener('keydown', handleKeyboard)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', handleKeyboard)
 })
 
 function openCreateTable() {
@@ -258,6 +267,22 @@ function changeSeatIndex(guestId: string, seatIndex: number) {
 function save() {
   store.save()
   alert('已保存')
+}
+
+function handleKeyboard(event: KeyboardEvent) {
+  const isUndo = (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z' && !event.shiftKey
+  const isRedo = (event.ctrlKey || event.metaKey) && ((event.key.toLowerCase() === 'z' && event.shiftKey) || event.key.toLowerCase() === 'y')
+  if (!isUndo && !isRedo) return
+
+  const target = event.target as HTMLElement | null
+  if (target?.matches('input, textarea, select')) return
+
+  event.preventDefault()
+  if (isUndo) {
+    store.undo()
+  } else {
+    store.redo()
+  }
 }
 
 async function loadCloudData() {
