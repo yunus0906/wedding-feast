@@ -6,8 +6,10 @@ import {
   fromWeddingRow
 } from '../../utils/state-mapper'
 import { useServerSupabase } from '../../utils/supabase'
+import { requireAuth } from '../../utils/auth'
 
 export default defineEventHandler(async event => {
+  requireAuth(event)
   const config = useRuntimeConfig()
   const query = getQuery(event)
   const weddingId = String(query.weddingId || config.public.defaultWeddingId)

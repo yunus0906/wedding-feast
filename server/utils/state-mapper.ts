@@ -10,15 +10,16 @@ export interface WeddingStatePayload {
   layoutItems: LayoutItem[]
 }
 
-export function toWeddingRow(wedding: Wedding) {
+export function toWeddingRow(wedding: Wedding, userId: string) {
   return {
     id: wedding.id,
     name: wedding.name,
-    updated_at: wedding.updatedAt
+    created_by: userId,
+    updated_by: userId
   }
 }
 
-export function toGuestRow(guest: Guest, weddingId: string) {
+export function toGuestRow(guest: Guest, weddingId: string, userId: string) {
   return {
     id: guest.id,
     wedding_id: weddingId,
@@ -30,12 +31,12 @@ export function toGuestRow(guest: Guest, weddingId: string) {
     children_count: guest.childrenCount,
     relation_tag: guest.relationTag,
     note: guest.note,
-    created_at: guest.createdAt,
-    updated_at: guest.updatedAt
+    created_by: userId,
+    updated_by: userId
   }
 }
 
-export function toTableRow(table: WeddingTable, weddingId: string) {
+export function toTableRow(table: WeddingTable, weddingId: string, userId: string) {
   return {
     id: table.id,
     wedding_id: weddingId,
@@ -43,23 +44,24 @@ export function toTableRow(table: WeddingTable, weddingId: string) {
     capacity: table.capacity,
     x: table.x,
     y: table.y,
-    created_at: table.createdAt,
-    updated_at: table.updatedAt
+    created_by: userId,
+    updated_by: userId
   }
 }
 
-export function toSeatRow(seat: Seat) {
+export function toSeatRow(seat: Seat, userId: string) {
   return {
     id: seat.id,
     guest_id: seat.guestId,
     table_id: seat.tableId,
     seat_index: seat.seatIndex,
     role: seat.role,
-    created_at: seat.createdAt
+    created_by: userId,
+    updated_by: userId
   }
 }
 
-export function toLayoutItemRow(item: LayoutItem, weddingId: string) {
+export function toLayoutItemRow(item: LayoutItem, weddingId: string, userId: string) {
   return {
     id: item.id,
     wedding_id: weddingId,
@@ -69,7 +71,9 @@ export function toLayoutItemRow(item: LayoutItem, weddingId: string) {
     width: item.width,
     height: item.height,
     rotation: item.rotation,
-    config: {}
+    config: {},
+    created_by: userId,
+    updated_by: userId
   }
 }
 

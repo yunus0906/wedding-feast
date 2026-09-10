@@ -19,6 +19,11 @@
         <p>目标</p>
         <strong>录宾客 · 排桌 · 保存</strong>
       </div>
+
+      <div class="account-actions">
+        <span>{{ user?.displayName || user?.username }}</span>
+        <button class="btn soft" type="button" @click="handleLogout">退出登录</button>
+      </div>
     </aside>
 
     <main class="main">
@@ -26,3 +31,12 @@
     </main>
   </div>
 </template>
+
+<script setup lang="ts">
+const { user, logout } = useAuth()
+
+async function handleLogout() {
+  await logout()
+  await navigateTo('/login')
+}
+</script>

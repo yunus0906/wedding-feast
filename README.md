@@ -16,6 +16,7 @@
 - 宾客拖拽或点击安排座位
 - 移除座位
 - 本地持久化保存
+- 登录保护与服务端会话校验
 
 ## 技术栈
 
@@ -55,6 +56,12 @@ pnpm dev
 ```
 
 默认会启动 Nuxt 开发服务，按终端提示访问本地地址。
+
+## 首次登录与 Supabase 初始化
+
+1. 复制 `.env.example` 为 `.env`，配置 Supabase 地址、服务角色密钥，以及高强度的 `NUXT_AUTH_SESSION_SECRET`（纯数字值必须用双引号包裹）。
+2. 在 Supabase SQL Editor 执行 `supabase/schema.sql`。
+3. 使用初始超管账号 `admin`、密码 `admin123` 登录。数据库只保存密码的 MD5 摘要；上线后应立即在数据库中重置为专属强密码的 MD5 值。
 
 ## 生产构建
 

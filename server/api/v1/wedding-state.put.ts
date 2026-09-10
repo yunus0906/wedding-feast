@@ -7,8 +7,10 @@ import {
   toWeddingRow
 } from '../../utils/state-mapper'
 import { useServerSupabase } from '../../utils/supabase'
+import { requireAuth } from '../../utils/auth'
 
 export default defineEventHandler(async event => {
+  const currentUser = requireAuth(event)
   const body = await readBody<WeddingStatePayload>(event)
   const weddingId = body.wedding?.id
 
@@ -20,7 +22,7 @@ export default defineEventHandler(async event => {
   const weddingRow = toWeddingRow({
     ...body.wedding,
     updatedAt: new Date().toISOString()
-  })
+  }, currentUser.id)
 
   const { error: weddingError } = await supabase.from('weddings').upsert(weddingRow)
   if (weddingError) throw createError({ statusCode: 500, statusMessage: weddingError.message })
@@ -71,13 +73,13 @@ export default defineEventHandler(async event => {
 
   const operations = [
     body.guests.length
-      ? supabase.from('guests').upsert(body.guests.map(guest => toGuestRow(guest, weddingId)))
+      ? supabase.from('guests').upsert(body.guests.map(guest => toGuestRow(guest, weddingId, currentUser.id)))
       : Promise.resolve({ error: null }),
     body.tables.length
-      ? supabase.from('wedding_tables').upsert(body.tables.map(table => toTableRow(table, weddingId)))
+      ? supabase.from('wedding_tables').upsert(body.tables.map(table => toTableRow(table, weddingId, currentUser.id)))
       : Promise.resolve({ error: null }),
     body.layoutItems.length
-      ? supabase.from('layout_items').upsert(body.layoutItems.map(item => toLayoutItemRow(item, weddingId)))
+      ? supabase.from('layout_items').upsert(body.layoutItems.map(item => toLayoutItemRow(item, weddingId, currentUser.id)))
       : Promise.resolve({ error: null })
   ]
 
@@ -86,7 +88,7 @@ export default defineEventHandler(async event => {
   if (upsertError) throw createError({ statusCode: 500, statusMessage: upsertError.message })
 
   if (body.seats.length) {
-    const { error } = await supabase.from('seats').upsert(body.seats.map(toSeatRow))
+    const { error } = await supabase.from('seats').upsert(body.seats.map(seat => toSeatRow(seat, currentUser.id)))
     if (error) throw createError({ statusCode: 500, statusMessage: error.message })
   }
 
