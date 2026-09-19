@@ -9,7 +9,7 @@
         </div>
       </div>
 
-      <nav class="nav">
+      <nav class="nav sidebar-nav" aria-label="主导航">
         <NuxtLink to="/" class="nav-link">项目概览</NuxtLink>
         <NuxtLink to="/guests" class="nav-link">宾客名单</NuxtLink>
         <NuxtLink to="/seating" class="nav-link">桌次安排</NuxtLink>
@@ -29,6 +29,12 @@
     <main class="main">
       <slot />
     </main>
+
+    <nav class="mobile-nav" aria-label="主导航">
+      <NuxtLink to="/" class="mobile-nav-link">概览</NuxtLink>
+      <NuxtLink to="/guests" class="mobile-nav-link">宾客</NuxtLink>
+      <NuxtLink to="/seating" class="mobile-nav-link">桌次</NuxtLink>
+    </nav>
   </div>
 </template>
 

@@ -1,14 +1,7 @@
 import type { Guest, GuestCategory, GuestImportRow } from '~/types/guest'
 import { createId } from '~/utils/id'
 
-export const guestCategories = ['亲戚', '好友', '同学'] as const
-
-function companionCount(guest: Guest) {
-  const legacyGuest = guest as Guest & { companionCount?: number }
-  return guest.companions
-    ? guest.companions.split(',').map(name => name.trim()).filter(Boolean).length
-    : legacyGuest.companionCount ?? 0
-}
+export const guestCategories = ['亲戚', '好友', '同学', '同事'] as const
 
 function normalizeCategory(category: string): GuestCategory {
   return guestCategories.includes(category as GuestCategory)
@@ -72,7 +65,7 @@ export const useGuestStore = defineStore('guest-store', {
   getters: {
     stats: state => {
       const guests = normalizeGuests(state.guests)
-      const adultCount = guests.reduce((total, guest) => total + 1 + companionCount(guest), 0)
+      const adultCount = guests.length
       const childCount = guests.reduce((total, guest) => total + guest.childrenCount, 0)
       return {
         totalGuests: guests.length,

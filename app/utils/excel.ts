@@ -1,7 +1,7 @@
 import type { GuestCategory, GuestImportRow } from '~/types/guest'
 
 const headers = ['姓名', '分类', '所属', '联系电话', '同行人', '儿童人数', '关系标签', '备注']
-const categories: GuestCategory[] = ['亲戚', '好友', '同学']
+const categories: GuestCategory[] = ['亲戚', '好友', '同学', '同事']
 
 export function parseGuestCsv(text: string): GuestImportRow[] {
   const lines = text

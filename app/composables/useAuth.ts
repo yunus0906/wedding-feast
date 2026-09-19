@@ -4,7 +4,11 @@ export function useAuth() {
   const user = useState<AuthUser | null>('auth-user', () => null)
 
   async function loadUser() {
-    const response = await $fetch<{ user: AuthUser | null }>('/api/v1/auth/me')
+    // During SSR, $fetch does not forward the browser's request headers to
+    // internal API calls. useRequestFetch preserves the Cookie header so the
+    // server can restore the HttpOnly session before rendering the page.
+    const requestFetch = import.meta.server ? useRequestFetch() : $fetch
+    const response = await requestFetch<{ user: AuthUser | null }>('/api/v1/auth/me')
     user.value = response.user
     return response.user
   }

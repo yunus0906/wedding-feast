@@ -1,6 +1,7 @@
 <template>
-  <div ref="canvasRef" class="canvas-shell">
-    <div v-if="guideLine" class="guide-line" :class="guideLine.orientation" :style="guideStyle" />
+  <div ref="viewportRef" class="canvas-viewport" @pointerdown.capture="startViewportGesture" @pointermove="moveViewportGesture" @pointerup="endViewportGesture" @pointercancel="endViewportGesture">
+    <div ref="canvasRef" class="canvas-shell" :style="canvasTransform">
+      <div v-if="guideLine" class="guide-line" :class="guideLine.orientation" :style="guideStyle" />
 
     <div
       v-for="table in tables"
@@ -47,6 +48,7 @@
         </div>
       </slot>
     </div>
+    </div>
   </div>
 </template>
 
@@ -64,6 +66,7 @@ const props = defineProps<{
   seats: Seat[]
   layoutItems: LayoutItem[]
   guestMap: Map<string, Guest>
+  mobileMode?: 'pan' | 'edit'
 }>()
 
 const emit = defineEmits<{
@@ -78,8 +81,19 @@ const emit = defineEmits<{
 }>()
 
 const canvasRef = ref<HTMLElement | null>(null)
+const viewportRef = ref<HTMLElement | null>(null)
 const draggingId = ref('')
 const guideLine = ref<null | { orientation: 'vertical' | 'horizontal'; value: number }>(null)
+const scale = ref(1)
+const offset = reactive({ x: 0, y: 0 })
+const isMobileViewport = ref(false)
+const pointers = new Map<number, { x: number; y: number }>()
+let panStart: { x: number; y: number; offsetX: number; offsetY: number } | null = null
+let pinchStart: { distance: number; scale: number } | null = null
+
+const canvasTransform = computed(() => ({
+  transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale.value})`
+}))
 
 const guideStyle = computed(() => {
   if (!guideLine.value) return {}
@@ -166,6 +180,8 @@ function computeSnap(kind: DragKind, id: string, x: number, y: number) {
 }
 
 function startDrag(kind: DragKind, id: string, event: PointerEvent) {
+  if (isMobileViewport.value && props.mobileMode !== 'edit') return
+  event.stopPropagation()
   const target = event.currentTarget as HTMLElement
   target.setPointerCapture(event.pointerId)
   draggingId.value = id
@@ -179,8 +195,8 @@ function startDrag(kind: DragKind, id: string, event: PointerEvent) {
   const startTop = bounds.y
 
   const onMove = (moveEvent: PointerEvent) => {
-    const dx = moveEvent.clientX - startX
-    const dy = moveEvent.clientY - startY
+    const dx = (moveEvent.clientX - startX) / scale.value
+    const dy = (moveEvent.clientY - startY) / scale.value
     const next = computeSnap(kind, id, Math.max(0, startLeft + dx), Math.max(0, startTop + dy))
     guideLine.value = next.guideLine
     if (kind === 'table') {
@@ -201,4 +217,61 @@ function startDrag(kind: DragKind, id: string, event: PointerEvent) {
   window.addEventListener('pointermove', onMove)
   window.addEventListener('pointerup', onUp, { once: true })
 }
+
+function distanceBetweenPointers() {
+  const [first, second] = [...pointers.values()]
+  return first && second ? Math.hypot(first.x - second.x, first.y - second.y) : 0
+}
+
+function startViewportGesture(event: PointerEvent) {
+  if (!isMobileViewport.value) return
+  pointers.set(event.pointerId, { x: event.clientX, y: event.clientY })
+  ;(event.currentTarget as HTMLElement).setPointerCapture(event.pointerId)
+  if (pointers.size === 2) {
+    pinchStart = { distance: distanceBetweenPointers(), scale: scale.value }
+    panStart = null
+  } else if (props.mobileMode === 'pan') {
+    panStart = { x: event.clientX, y: event.clientY, offsetX: offset.x, offsetY: offset.y }
+  }
+}
+
+function moveViewportGesture(event: PointerEvent) {
+  if (!isMobileViewport.value || !pointers.has(event.pointerId)) return
+  pointers.set(event.pointerId, { x: event.clientX, y: event.clientY })
+  if (pointers.size >= 2 && pinchStart) {
+    const distance = distanceBetweenPointers()
+    if (pinchStart.distance) scale.value = Math.min(1.5, Math.max(0.35, pinchStart.scale * distance / pinchStart.distance))
+    return
+  }
+  if (panStart && props.mobileMode === 'pan') {
+    offset.x = panStart.offsetX + event.clientX - panStart.x
+    offset.y = panStart.offsetY + event.clientY - panStart.y
+  }
+}
+
+function endViewportGesture(event: PointerEvent) {
+  pointers.delete(event.pointerId)
+  if (pointers.size < 2) pinchStart = null
+  if (!pointers.size) panStart = null
+}
+
+function resetView() {
+  scale.value = isMobileViewport.value ? 0.5 : 1
+  offset.x = 0
+  offset.y = 0
+}
+
+function updateViewport() {
+  isMobileViewport.value = window.matchMedia('(max-width: 768px)').matches
+  resetView()
+}
+
+onMounted(() => {
+  updateViewport()
+  window.addEventListener('resize', updateViewport)
+})
+
+onBeforeUnmount(() => window.removeEventListener('resize', updateViewport))
+
+defineExpose({ resetView })
 </script>

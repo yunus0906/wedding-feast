@@ -84,6 +84,12 @@ a {
   gap: 10px;
 }
 
+.mobile-nav,
+.guest-card-list,
+.seated-card-list {
+  display: none;
+}
+
 .nav-link {
   border: 3px solid var(--line);
   background: var(--panel);
@@ -318,6 +324,10 @@ a {
   background-position: center center;
 }
 
+.canvas-viewport {
+  overflow: hidden;
+}
+
 .guide-line {
   position: absolute;
   z-index: 5;
@@ -488,4 +498,129 @@ a {
   .grid-4 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+}
+
+@media (max-width: 768px) {
+  body {
+    font-size: 15px;
+  }
+
+  .app-shell {
+    display: block;
+    min-height: 100dvh;
+  }
+
+  .sidebar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 16px;
+    border-bottom: 3px solid var(--line);
+  }
+
+  .brand {
+    gap: 9px;
+    margin: 0;
+  }
+
+  .brand-badge {
+    width: 40px;
+    height: 40px;
+    border-width: 3px;
+    font-size: 18px;
+    box-shadow: 3px 3px 0 #1d1d1d;
+  }
+
+  .brand h1 { font-size: 20px; }
+  .eyebrow { font-size: 10px; }
+  .sidebar-nav, .sidebar-note { display: none; }
+  .account-actions { margin: 0; display: block; }
+  .account-actions span { display: none; }
+  .account-actions .btn { padding: 8px 10px; font-size: 13px; }
+
+  .main {
+    padding: 16px;
+    padding-bottom: calc(86px + env(safe-area-inset-bottom));
+  }
+
+  .mobile-nav {
+    position: fixed;
+    z-index: 40;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+    border-top: 3px solid var(--line);
+    background: var(--panel);
+  }
+
+  .mobile-nav-link {
+    min-height: 44px;
+    display: grid;
+    place-items: center;
+    border: 2px solid var(--line);
+    font-weight: 800;
+    background: #fff;
+  }
+  .mobile-nav-link.router-link-active { background: var(--accent-3); }
+
+  .page { gap: 14px; }
+  .hero, .panel { padding: 14px; }
+  .hero { display: grid; align-items: stretch; }
+  .hero h2 { font-size: 26px; }
+  .hero > .btn { width: 100%; text-align: center; }
+  .grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .stat { padding: 12px; box-shadow: 4px 4px 0 #1d1d1d; }
+  .stat strong { font-size: 24px; }
+  .toolbar { align-items: stretch; }
+  .toolbar .btn, .toolbar > label.btn { min-height: 44px; }
+  .toolbar .input, .toolbar .select { max-width: none !important; }
+
+  .table-wrap { display: none; }
+  .guest-card-list, .seated-card-list { display: grid; gap: 12px; }
+  .guest-card, .seated-card {
+    border: 3px solid var(--line);
+    padding: 14px;
+    background: #fff;
+  }
+  .card-heading { display: flex; justify-content: space-between; gap: 8px; align-items: start; }
+  .card-heading > strong, .seated-card > strong { font-size: 19px; }
+  .card-details { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 14px 0; }
+  .card-details div { min-width: 0; }
+  .card-details dt { color: #5a5148; font-size: 12px; }
+  .card-details dd { margin: 3px 0 0; overflow-wrap: anywhere; }
+  .card-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .card-actions .btn { min-height: 44px; }
+
+  .canvas-toolbar { display: grid; gap: 12px; }
+  .canvas-toolbar .toolbar, .canvas-mode-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .canvas-toolbar .btn { padding-inline: 8px; }
+  .canvas-viewport {
+    height: min(62vh, 560px);
+    border: 4px solid var(--line);
+    background: var(--panel);
+    touch-action: none;
+  }
+  .canvas-shell {
+    width: 960px;
+    min-height: 760px;
+    transform-origin: top left;
+    will-change: transform;
+  }
+  .seat-panel { box-shadow: 4px 4px 0 #1d1d1d; }
+  .seated-card-list { margin-top: 0; }
+  .seated-card { display: grid; gap: 10px; }
+  .seated-card label { display: grid; gap: 5px; font-size: 13px; font-weight: 700; }
+  .seated-card .btn { min-height: 44px; }
+
+  .modal-backdrop { padding: 12px; align-items: end; }
+  .modal { width: 100%; max-height: calc(100dvh - 24px); overflow: auto; padding: 16px; box-shadow: 4px 4px 0 #1d1d1d; }
+  .field-grid { grid-template-columns: 1fr; }
+  .full { grid-column: auto; }
+  .login-panel { padding: 20px; box-shadow: 4px 4px 0 #1d1d1d; }
+  .auth-layout { padding: 16px; }
 }

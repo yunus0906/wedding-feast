@@ -83,6 +83,27 @@
           </tbody>
         </table>
       </div>
+
+      <div class="guest-card-list">
+        <article v-for="guest in filteredGuests" :key="guest.id" class="guest-card">
+          <div class="card-heading">
+            <strong>{{ guest.name }}</strong>
+            <div><span class="tag">{{ guest.category }}</span><span class="tag" :class="guest.side">{{ sideLabel(guest.side) }}</span></div>
+          </div>
+          <dl class="card-details">
+            <div><dt>电话</dt><dd>{{ guest.phone || '-' }}</dd></div>
+            <div><dt>同行人</dt><dd>{{ guest.companions || '-' }}</dd></div>
+            <div><dt>儿童</dt><dd>{{ guest.childrenCount }} 人</dd></div>
+            <div><dt>桌次</dt><dd>{{ tableNameByGuest(guest.id) }}</dd></div>
+            <div class="full"><dt>关系</dt><dd><span v-for="tag in splitTags(guest.relationTag)" :key="tag" class="tag">{{ tag }}</span><span v-if="!splitTags(guest.relationTag).length">-</span></dd></div>
+          </dl>
+          <div class="card-actions">
+            <button class="btn soft" @click="openEdit(guest.id)">编辑</button>
+            <button class="btn warning" @click="removeGuest(guest.id)">删除</button>
+          </div>
+        </article>
+        <p v-if="!filteredGuests.length" class="muted">暂无匹配宾客。</p>
+      </div>
     </div>
 
     <GuestFormPanel

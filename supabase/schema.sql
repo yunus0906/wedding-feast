@@ -50,7 +50,7 @@ create table if not exists public.guests (
   created_at timestamptz not null default now(),
   updated_by uuid references public.app_users(id) on delete set null,
   updated_at timestamptz not null default now(),
-  constraint guests_category_check check (category in ('亲戚', '好友', '同学')),
+  constraint guests_category_check check (category in ('亲戚', '好友', '同学', '同事')),
   constraint guests_side_check check (side in ('groom', 'bride')),
   constraint guests_children_count_check check (children_count >= 0)
 );
@@ -59,7 +59,7 @@ comment on table public.guests is '宾客名单表，保存婚礼宾客基础资
 comment on column public.guests.id is '宾客 ID。';
 comment on column public.guests.wedding_id is '所属婚礼 ID。';
 comment on column public.guests.name is '宾客姓名。';
-comment on column public.guests.category is '宾客分类，下拉选项：亲戚、好友、同学。';
+comment on column public.guests.category is '宾客分类，下拉选项：亲戚、好友、同学、同事。';
 comment on column public.guests.side is '宾客所属方，groom 表示男方，bride 表示女方。';
 comment on column public.guests.phone is '联系电话，可为空。';
 comment on column public.guests.companions is '同行人姓名列表，使用英文逗号分隔。';

@@ -12,6 +12,7 @@
           <option value="亲戚">亲戚</option>
           <option value="好友">好友</option>
           <option value="同学">同学</option>
+          <option value="同事">同事</option>
         </select>
         <select v-model="form.side" class="select">
           <option value="groom">男方</option>

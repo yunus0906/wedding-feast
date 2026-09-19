@@ -1,5 +1,5 @@
 export type GuestSide = 'groom' | 'bride'
-export type GuestCategory = '亲戚' | '好友' | '同学'
+export type GuestCategory = '亲戚' | '好友' | '同学' | '同事'
 
 export interface Guest {
   id: string

@@ -22,15 +22,22 @@
         <button class="btn soft" @click="store.addLayoutItem('stage')">舞台</button>
         <button class="btn soft" @click="store.addLayoutItem('t_stage')">T 型台</button>
       </div>
+      <div class="canvas-mode-actions">
+        <button class="btn" :class="{ primary: canvasMode === 'pan' }" @click="canvasMode = 'pan'">浏览</button>
+        <button class="btn" :class="{ primary: canvasMode === 'edit' }" @click="canvasMode = 'edit'">编辑</button>
+        <button class="btn soft" @click="canvasRef?.resetView()">复位</button>
+      </div>
       <div class="muted">已入座 {{ store.seats.length }} / 未入座 {{ unassignedGuests.length }}</div>
     </div>
 
     <div class="two-col">
       <SeatingCanvas
+        ref="canvasRef"
         :tables="store.tables"
         :seats="store.seats"
         :layout-items="store.layoutItems"
         :guest-map="guestMap"
+        :mobile-mode="canvasMode"
         @drag-history-start="store.pushHistory()"
         @move-table="payload => store.moveTablePreview(payload.id, payload.x, payload.y)"
         @move-layout="payload => store.updateLayoutItemPreview(payload.id, { x: payload.x, y: payload.y })"
@@ -96,6 +103,28 @@
           </tbody>
         </table>
       </div>
+      <div class="seated-card-list">
+        <article v-for="seat in filteredSeats" :key="seat.id" class="seated-card">
+          <strong>{{ guestMap.get(seat.guestId)?.name || '-' }}</strong>
+          <label>桌次
+            <select class="select" :value="seat.tableId" @change="changeSeatTable(seat.guestId, ($event.target as HTMLSelectElement).value)">
+              <option v-for="table in store.tables" :key="table.id" :value="table.id">{{ table.name }}</option>
+            </select>
+          </label>
+          <label>座位
+            <select class="select" :value="seat.seatIndex" @change="changeSeatIndex(seat.guestId, Number(($event.target as HTMLSelectElement).value))">
+              <option v-for="option in seatOptionsFor(seat.tableId)" :key="option.index" :value="option.index">{{ option.index + 1 }}号位</option>
+            </select>
+          </label>
+          <label>身份
+            <select class="select" :value="seat.role" @change="store.updateSeatRole(seat.guestId, ($event.target as HTMLSelectElement).value as SeatRole)">
+              <option value="regular">普通</option><option value="host">主陪</option><option value="cohost">副陪</option>
+            </select>
+          </label>
+          <button class="btn warning" @click="store.unseatGuest(seat.guestId)">移除座位</button>
+        </article>
+        <p v-if="!filteredSeats.length" class="muted">暂无已入座宾客。</p>
+      </div>
     </div>
 
     <TableDialog
@@ -136,6 +165,8 @@ const selectedGuestId = ref<string | null>(null)
 const pendingSeat = ref<{ tableId: string; seatIndex: number } | null>(null)
 const draggingGuestId = ref<string | null>(null)
 const seatTableFilter = ref('')
+const canvasMode = ref<'pan' | 'edit'>('pan')
+const canvasRef = ref<{ resetView: () => void } | null>(null)
 
 const guestMap = computed(() => new Map(guestStore.guests.map(guest => [guest.id, guest])))
 const tableMap = computed(() => new Map(store.tables.map(table => [table.id, table])))
